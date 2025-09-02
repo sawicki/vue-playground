@@ -2,50 +2,162 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vue 3 App (CDN)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <!-- Styles -->
+    <title>Vue 3 Launch Pad (Options API + Search)</title>
+
+    <!--
+      ===============================================================
+      INTENDED VERSIONS / SETUP
+      ---------------------------------------------------------------
+      - Framework: Vue 3.x  (global production build via CDN)
+      - Style:     External CSS file (stylesheet.css)
+      - Data:      ES module (data.js) exporting an array
+      - Pattern:   Vue 3 Options API (data + computed) — no methods here
+      - Goal:      Beginner-friendly launch pad with a live search filter
+      ===============================================================
+
+      TIP ABOUT PINNING VERSIONS:
+      - The script below uses "vue@3" (latest 3.x). For reproducible teaching,
+        pin a specific version, e.g.:
+        https://unpkg.com/vue@3.4.38/dist/vue.global.prod.js
+    -->
+
+    <!-- Global styles for the page -->
     <link rel="stylesheet" href="stylesheet.css" />
 
-    <!-- Vue 3 from CDN (Intended: Vue 3.x) -->
+    <!-- Vue 3 (GLOBAL BUILD) from a CDN
+         - Exposes a global "Vue" object we can pull createApp from.
+    -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
   </head>
+
   <body>
+    <!--
+      #app is the root element controlled by Vue after mount().
+      Everything inside can use Vue template syntax (v-for, :href, {{ }}).
+    -->
     <div id="app">
+      <!-- HEADER CARD -->
       <header class="card">
-        <h2 class="c">Links to some of my Vue Apps</h2>
+        <h2 class="c">Course Launch Pad (Vue 3 • Options API)</h2>
         <p>
-          Most of the apps below are assignments in various Vue courses I've taken.
+          This page lists lesson apps/resources used in class. Click a title to open it.
           <br />
           <hr />
-          <div class="red" style="text-align: center">
-            Click on the arrows on the left for more info
+          <div class="red" style="text-align:center">
+            Tip: click the arrow at the left of each row to expand details.
           </div>
           <hr />
         </p>
       </header>
 
-      <div v-for="(site, index) in data" :key="index">
+      <!-- SEARCH UI (bound with v-model to 'search') -->
+      <div class="card" style="display:flex;flex-direction:column;gap:8px">
+        <!--
+          v-model binds the input's value to our "search" string in data().
+          As the user types, "search" updates, which recomputes the "filtered"
+          list (see the computed block below).
+        -->
+        <label>
+          <strong>Search:</strong>
+          <input
+            type="search"
+            v-model="search"
+            placeholder="Filter by title, URL, or description..."
+            style="width:100%;padding:6px"
+          />
+        </label>
+
+        <!-- Show a tiny hint to confirm what the search covers -->
+        <small>
+          Filtering by <em>title</em>, <em>URL</em>, or <em>description</em>. Clear the box to see everything.
+        </small>
+
+        <!-- (Optional) Quick feedback on how many items match -->
+        <small><strong>{{ filtered.length }}</strong> result(s)</small>
+      </div>
+
+      <!--
+        RENDER THE LIST
+        We iterate over "filtered" (the computed, searched list),
+        not the raw "data". Each "site" is [title, url, description].
+        :key helps Vue track items for efficient updates.
+      -->
+      <div v-for="(site, index) in filtered" :key="index">
+        <!-- Native HTML disclosure widget: <details>/<summary> -->
         <details class="card">
           <summary>
-            <a :href="site[1]" target="_blank" rel="noreferrer">
+            <!-- :href is an attribute binding (same as v-bind:href) -->
+            <a :href="site[1]" target="_blank" rel="noopener noreferrer">
               <strong>{{ site[0] }}</strong>
             </a>
           </summary>
+
+          <!-- A little spacing under the summary line -->
           <br />
+
+          <!-- {{ ... }} is text interpolation -->
           {{ site[2] }}
         </details>
       </div>
+
+      <!--
+        If you want to show a friendly "no results" state, uncomment below:
+        <p v-if="filtered.length === 0" class="card" style="text-align:center">
+          No matches. Try a different search term.
+        </p>
+      -->
     </div>
 
+    <!--
+      APP SCRIPT (ES MODULE)
+      ---------------------------------------------------------------
+      - We import the lesson data array from data.js (must be served, not file://).
+      - We create a Vue app with the Options API:
+          * data(): returns our reactive state (the full data and the search string)
+          * computed.filtered: derives a filtered array from data + search
+      - Then we mount the app onto the #app element.
+      ---------------------------------------------------------------
+      NOTE FOR LOCAL TESTING:
+      - Opening index.html directly from disk can block ES modules in some browsers.
+        You're using VS Code Live Server, which is perfect. Alternatively:
+          python -m http.server 8000   →  http://localhost:8000/
+    -->
     <script type="module">
       import data from './data.js';
       const { createApp } = Vue;
 
+      // INTENDED: Vue 3.x (Options API)
       createApp({
-        setup() {
-          return { data };
+        // Reactive state for our component/page
+        data() {
+          return {
+            // The full list of lessons/apps imported from data.js
+            data,
+
+            // The user's search query string (bound to the input via v-model)
+            search: ''
+          };
+        },
+
+        // Derived state — recalculated when dependencies change
+        computed: {
+          // Return a filtered list based on the search query.
+          // This recomputes when either 'data' or 'search' changes.
+          filtered() {
+            const q = this.search.trim().toLowerCase();
+            if (!q) return this.data; // empty query → show everything
+
+            // Each entry is [title, url, description]
+            return this.data.filter(([title, url, desc]) => {
+              return (
+                String(title).toLowerCase().includes(q) ||
+                String(url).toLowerCase().includes(q) ||
+                String(desc).toLowerCase().includes(q)
+              );
+            });
+          }
         }
       }).mount('#app');
     </script>
