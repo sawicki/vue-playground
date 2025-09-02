@@ -1,0 +1,51 @@
+/* ===================================================================
+   stylesheet.css — basic styles for the Launch Pad
+   Small on purpose, annotated for teaching.
+   =================================================================== */
+
+/* Set a soft page background */
+body {
+  background-color: #bebebe;
+}
+
+/* Utility helpers */
+.red { color: red; }      /* use on text that needs attention */
+.c   { text-align: center; } /* quick centering for headings, etc. */
+
+/* A more visible horizontal rule */
+hr {
+  height: 2px;           /* thickness */
+  border: none;          /* remove default border */
+  background-color: black;
+  width: 50%;            /* shorter than full width */
+  margin: 0.75rem auto;  /* center via auto side margins */
+}
+
+/* Headings: trim default top margin so cards sit tighter */
+h1, h2 {
+  margin: 0;
+}
+
+/* "Card" look: used for the header and each list item */
+.card {
+  background-color: #add8e5;          /* light, friendly blue */
+  margin: 10px auto;                  /* space around + center block */
+  width: 450px;                       /* fixed page width for consistency */
+  padding: 10px;                      /* inner spacing */
+  color: #1b3e59;                     /* dark blue text for contrast */
+  border-radius: 10px;                /* rounded corners */
+  box-shadow: 8px 8px 16px 2px #1b3e59; /* subtle depth */
+}
+
+/* Link hover: create a left→right "fill" effect and invert text color */
+a:hover {
+  box-shadow: inset 450px 0 0 0 blue;
+  color: white;
+  text-decoration: none;
+}
+
+/* Make the summary row feel clickable; keep the default disclosure marker */
+summary {
+  cursor: pointer;
+  outline: none;
+}

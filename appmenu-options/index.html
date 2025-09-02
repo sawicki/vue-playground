@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vue 3 App (CDN)</title>
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="stylesheet.css" />
+
+    <!-- Vue 3 from CDN (Intended: Vue 3.x) -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  </head>
+  <body>
+    <div id="app">
+      <header class="card">
+        <h2 class="c">Links to some of my Vue Apps</h2>
+        <p>
+          Most of the apps below are assignments in various Vue courses I've taken.
+          <br />
+          <hr />
+          <div class="red" style="text-align: center">
+            Click on the arrows on the left for more info
+          </div>
+          <hr />
+        </p>
+      </header>
+
+      <div v-for="(site, index) in data" :key="index">
+        <details class="card">
+          <summary>
+            <a :href="site[1]" target="_blank" rel="noreferrer">
+              <strong>{{ site[0] }}</strong>
+            </a>
+          </summary>
+          <br />
+          {{ site[2] }}
+        </details>
+      </div>
+    </div>
+
+    <script type="module">
+      import data from './data.js';
+      const { createApp } = Vue;
+
+      createApp({
+        setup() {
+          return { data };
+        }
+      }).mount('#app');
+    </script>
+  </body>
+</html>
