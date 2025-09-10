@@ -66,26 +66,18 @@
       }
       .field {
         display: grid;
-        gap: 0.5rem;
+        gap: 0.25rem;
         margin-bottom: 0.75rem;
       }
-      label {
+      .label {
         font-weight: 600;
         font-size: 0.95rem;
       }
-      input[type="date"],
-      input[type="text"] {
-        font: inherit;
+      .textline {
         padding: 0.65rem 0.75rem;
-        border-radius: 12px;
         border: 1px solid rgba(0, 0, 0, 0.15);
-        outline: none;
-        transition: box-shadow 0.2s, border-color 0.2s;
+        border-radius: 12px;
         background: #fff;
-      }
-      input:focus {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 4px var(--ring);
       }
       .note {
         font-size: 0.9rem;
@@ -99,10 +91,6 @@
       }
       .stat:last-child {
         border-bottom: 0;
-      }
-      .label {
-        color: var(--muted);
-        font-size: 0.9rem;
       }
       .value {
         font-size: clamp(1.25rem, 1.2vw+1rem, 1.75rem);
@@ -141,25 +129,20 @@
         </header>
 
         <section class="grid">
-          <!-- Left panel: inputs -->
+          <!-- Left panel: fixed baseline + now -->
           <section class="panel">
             <div class="field">
-              <label for="dob">Birth Date</label>
-              <input
-                id="dob"
-                type="date"
-                v-model="dobStr"
-                @change="onDobChange"
-              />
+              <div class="label">Baseline (fixed)</div>
+              <div class="textline mono">{{ formattedDob }}</div>
             </div>
 
             <div class="field">
-              <label for="now">As of</label>
-              <input id="now" type="text" :value="formattedNow" readonly />
+              <div class="label">As of</div>
+              <div class="textline mono">{{ formattedNow }}</div>
               <div class="note">
                 “Days since birth” uses UTC midnights to avoid DST issues.
-                “Years (fraction)” uses time between birthdays as the
-                denominator (365/366 days as needed).
+                “Years (fraction)” uses the exact birthday-to-birthday span
+                (365/366).
               </div>
             </div>
           </section>
@@ -193,35 +176,26 @@
       </main>
     </div>
 
-    <!-- Primary CDN; many networks allow jsDelivr even when unpkg is blocked -->
+    <!-- Vue -->
     <script
       src="https://cdn.jsdelivr.net/npm/vue@3.4.38/dist/vue.global.prod.js"
       defer
     ></script>
 
-    <!-- App script (deferred). If Vue didn't load, we auto-fallback to unpkg, then mount. -->
+    <!-- App -->
     <script defer>
-      /***** CONFIG: change the default here if needed *****/
-      const DEFAULT_DOB = "2022-11-12"; // ← set to '2022-11-12' if that’s the correct year
+      // Maggie’s fixed baseline in LOCAL time:
+      const DEFAULT_DOB = "2022-11-12T19:46:00";
 
-      /* ===== Utilities (documented) ===== */
-
-      // Leap year per Gregorian rules.
       function isLeapYear(y) {
         return y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0);
       }
-
-      // Build a local Date from Y-M-D.
       function dateLocalYMD(y, m, d) {
         return new Date(y, m - 1, d);
       }
-
-      // UTC midnight for Y-M-D (used for day-difference to avoid DST).
       function dateUtcMidnight(y, m, d) {
         return new Date(Date.UTC(y, m - 1, d));
       }
-
-      // Whole days between two dates, counting from their UTC midnight boundaries.
       function wholeDaysBetween(d1, d2) {
         const MS = 86_400_000;
         const u1 = Date.UTC(
@@ -236,8 +210,6 @@
         );
         return Math.floor((u2 - u1) / MS);
       }
-
-      // Add N years to birth date; map Feb 29 to Feb 28 in non-leap years (common civil rule).
       function addYearsBirthAware(birthDate, n) {
         const y = birthDate.getFullYear() + n,
           m = birthDate.getMonth() + 1,
@@ -246,16 +218,12 @@
           return dateLocalYMD(y, 2, 28);
         return dateLocalYMD(y, m, d);
       }
-
-      // Whole completed years as of a given date.
       function wholeYearsElapsed(birthDate, asOf) {
         let years = asOf.getFullYear() - birthDate.getFullYear();
         const thisAnniv = addYearsBirthAware(birthDate, years);
         if (asOf < thisAnniv) years--;
         return years;
       }
-
-      // Birthday window and fractional years (key to leap-aware fraction).
       function birthdayWindow(birthDate, asOf) {
         const yearsCompleted = wholeYearsElapsed(birthDate, asOf);
         const lastBirthday = addYearsBirthAware(birthDate, yearsCompleted);
@@ -271,8 +239,6 @@
           den = nextBirthday - lastBirthday;
         return yearsCompleted + (den > 0 ? num / den : 0);
       }
-
-      // Human y/m/d breakdown: step months from last birthday; days are exact whole days.
       function yearsMonthsDays(birthDate, asOf) {
         let y = wholeYearsElapsed(birthDate, asOf);
         let anchor = addYearsBirthAware(birthDate, y);
@@ -301,7 +267,6 @@
         );
         return { y, m, d };
       }
-
       function formatLocal(dt) {
         const pad = (n) => String(n).padStart(2, "0");
         return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(
@@ -311,17 +276,9 @@
         )}`;
       }
 
-      /* ===== Vue App (Options API) ===== */
       const App = {
         data() {
-          return {
-            dobStr: DEFAULT_DOB, // bound to the date input
-            dob: new Date(
-              ...DEFAULT_DOB.split("-").map((v, i) => (i === 1 ? +v - 1 : +v))
-            ), // local Date
-            now: new Date(),
-            timer: null,
-          };
+          return { dob: new Date(DEFAULT_DOB), now: new Date(), timer: null };
         },
         mounted() {
           this.timer = setInterval(() => {
@@ -332,10 +289,12 @@
           if (this.timer) clearInterval(this.timer);
         },
         computed: {
+          formattedDob() {
+            return formatLocal(this.dob);
+          },
           formattedNow() {
             return formatLocal(this.now);
           },
-          // Use LOCAL Y-M-D to build UTC midnights (avoids off-by-one around timezones)
           daysSinceBirth() {
             const bUTC = dateUtcMidnight(
               this.dob.getFullYear(),
@@ -356,23 +315,12 @@
             return yearsMonthsDays(this.dob, this.now);
           },
         },
-        methods: {
-          onDobChange() {
-            const [y, m, d] = (this.dobStr || "").split("-").map(Number);
-            if (!y || !m || !d) return;
-            const dt = new Date(y, m - 1, d);
-            if (dt > new Date()) return; // guard against future dates
-            this.dob = dt;
-          },
-        },
       };
 
-      // Mount with CDN fallback (jsDelivr → unpkg) so Vue always loads.
       (function mountVue() {
         const boot = () => Vue.createApp(App).mount("#app");
-        if (window.Vue) {
-          boot();
-        } else {
+        if (window.Vue) boot();
+        else {
           const s = document.createElement("script");
           s.src = "https://unpkg.com/vue@3.4.38/dist/vue.global.prod.js";
           s.onload = boot;
