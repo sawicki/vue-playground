@@ -2,45 +2,81 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Age & Days Since Birth (Vue 3 - Options API)</title>
+    <title>Age & Days Since Maggie's Birth (Vue 3 - Options API)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+
     <style>
+      /* ------------------------------------------------------------
+         THEME TOKENS (CSS variables)
+         - Centralized color + radius + shadows so it's easy to retheme.
+         ------------------------------------------------------------ */
       :root {
-        --bg1: #eef3ff;
-        --bg2: #f9fcff;
-        --ink: #1e2a32;
-        --muted: #546e7a;
-        --accent: #3f51b5;
-        --card: #fff;
-        --ring: rgba(63, 81, 181, 0.25);
+        /* Accent and text */
+        --ink: #1e2a32; /* main text color (dark slate) */
+        --muted: #546e7a; /* secondary text color */
+        --accent: #5648e6; /* violet-blue accent */
+
+        /* Card surface */
+        --card: #ffffff; /* panel background */
+        --ring: rgba(86, 72, 230, 0.25); /* focus ring / glow */
+
+        /* Elegant multi-layer gradient background:
+           1) linear base wash
+           2) large soft radial glow top-left
+           3) smaller radial glow bottom-right
+           This gives depth without being distracting. */
+        --bg-linear-1: #eff3ff;
+        --bg-linear-2: #fbfdff;
+        --bg-radial-1: rgba(124, 77, 255, 0.2); /* soft violet */
+        --bg-radial-2: rgba(3, 169, 244, 0.14); /* soft cyan   */
       }
+
+      /* ------------------------------------------------------------
+         PAGE LAYOUT & TYPOGRAPHY
+         ------------------------------------------------------------ */
       html,
       body {
         height: 100%;
         margin: 0;
-        background: linear-gradient(180deg, var(--bg1), var(--bg2));
         color: var(--ink);
         font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica,
           Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        /* Layered background:
+           - The order matters: the *first* listed gradient is painted on top. */
+        background: radial-gradient(
+            1200px 700px at 5% 0%,
+            var(--bg-radial-1),
+            transparent 60%
+          ),
+          radial-gradient(
+            900px 500px at 95% 100%,
+            var(--bg-radial-2),
+            transparent 60%
+          ),
+          linear-gradient(180deg, var(--bg-linear-1), var(--bg-linear-2));
       }
+
       .wrap {
         min-height: 100%;
         display: grid;
-        place-items: center;
-        padding: 2rem;
+        place-items: center; /* center the card vertically and horizontally */
+        padding: 2.25rem;
       }
+
       .card {
         width: 100%;
-        max-width: 860px;
+        max-width: 900px;
         background: var(--card);
         border: 1px solid rgba(0, 0, 0, 0.06);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-        border-radius: 20px;
-        padding: 1.5rem;
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.08),
+          0 2px 6px rgba(0, 0, 0, 0.05);
+        border-radius: 22px;
+        padding: 1.75rem;
       }
+
       h1 {
         margin: 0 0 0.25rem 0;
-        font-size: clamp(1.6rem, 2vw+1rem, 2.2rem);
+        font-size: clamp(1.6rem, 2vw + 1rem, 2.25rem);
         color: var(--accent);
         letter-spacing: 0.2px;
       }
@@ -48,6 +84,8 @@
         color: var(--muted);
         margin-bottom: 1.25rem;
       }
+
+      /* Two-column at >= 720px; single-column on narrow screens */
       .grid {
         display: grid;
         grid-template-columns: 1fr;
@@ -58,24 +96,26 @@
           grid-template-columns: 1.2fr 1fr;
         }
       }
+
       .panel {
         border: 1px solid rgba(0, 0, 0, 0.06);
         border-radius: 16px;
         padding: 1rem;
         background: #fff;
       }
+
       .field {
         display: grid;
-        gap: 0.25rem;
-        margin-bottom: 0.75rem;
+        gap: 0.35rem;
+        margin-bottom: 0.9rem;
       }
       .label {
-        font-weight: 600;
-        font-size: 0.95rem;
+        font-weight: 700;
+        font-size: 1.05rem;
       }
       .textline {
         padding: 0.65rem 0.75rem;
-        border: 1px solid rgba(0, 0, 0, 0.15);
+        border: 1px solid rgba(0, 0, 0, 0.12);
         border-radius: 12px;
         background: #fff;
       }
@@ -83,6 +123,7 @@
         font-size: 0.9rem;
         color: var(--muted);
       }
+
       .stat {
         display: grid;
         gap: 0.25rem;
@@ -92,14 +133,16 @@
       .stat:last-child {
         border-bottom: 0;
       }
+
       .value {
-        font-size: clamp(1.25rem, 1.2vw+1rem, 1.75rem);
-        font-weight: 700;
+        font-size: clamp(1.25rem, 1.2vw + 1rem, 1.8rem);
+        font-weight: 800;
         letter-spacing: 0.2px;
       }
       .mono {
         font-variant-numeric: tabular-nums;
       }
+
       .footer {
         margin-top: 1rem;
         font-size: 0.9rem;
@@ -118,7 +161,9 @@
       }
     </style>
   </head>
+
   <body>
+    <!-- Root Vue mount point -->
     <div id="app" class="wrap">
       <main class="card">
         <header>
@@ -129,7 +174,7 @@
         </header>
 
         <section class="grid">
-          <!-- Left panel: fixed baseline + now -->
+          <!-- LEFT: fixed baseline & current time (read-only) -->
           <section class="panel">
             <div class="field">
               <div class="label">Baseline (fixed)</div>
@@ -142,12 +187,12 @@
               <div class="note">
                 “Days since birth” uses UTC midnights to avoid DST issues.
                 “Years (fraction)” uses the exact birthday-to-birthday span
-                (365/366).
+                (365/366 days as appropriate).
               </div>
             </div>
           </section>
 
-          <!-- Right panel: results -->
+          <!-- RIGHT: computed results -->
           <section class="panel">
             <div class="stat">
               <div class="label">Days Since Birth</div>
@@ -155,10 +200,12 @@
                 {{ daysSinceBirth.toLocaleString() }}
               </div>
             </div>
+
             <div class="stat">
               <div class="label">Age (Years, fractional)</div>
               <div class="value mono">{{ ageYearsFractional.toFixed(9) }}</div>
             </div>
+
             <div class="stat">
               <div class="label">Age (Years • Months • Days)</div>
               <div class="value mono">
@@ -176,28 +223,51 @@
       </main>
     </div>
 
-    <!-- Vue -->
+    <!-- Vue 3 CDN (global build with createApp) -->
     <script
       src="https://cdn.jsdelivr.net/npm/vue@3.4.38/dist/vue.global.prod.js"
       defer
     ></script>
 
-    <!-- App -->
+    <!-- APP SCRIPT -->
     <script defer>
-      // Maggie’s fixed baseline in LOCAL time:
+      /* ================================================================
+         CONFIG: Maggie’s birth date/time (LOCAL TIME)
+         - Using an ISO-like string without timezone suffix makes Date()
+           interpret it in the user's local timezone: "YYYY-MM-DDTHH:MM:SS"
+         - Baseline requested: Nov 12, 2022 @ 7:46 PM.
+         ================================================================= */
       const DEFAULT_DOB = "2022-11-12T19:46:00";
 
+      /* ================================================================
+         DATE/TIME HELPERS — why we wrote these:
+         - JavaScript Date is powerful but a bit awkward.
+         - We keep all "days since" math in UTC midnights to avoid
+           DST (daylight saving) surprises.
+         - For human-friendly age (Y • M • D), we step through real
+           calendar months rather than dividing by an "average month".
+         ================================================================= */
+
+      /** Is this Gregorian year a leap year? */
       function isLeapYear(y) {
         return y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0);
       }
+
+      /** Build a *local-time* Date from Y-M-D numbers. */
       function dateLocalYMD(y, m, d) {
+        // JS months are 0-based (Jan = 0), so subtract 1
         return new Date(y, m - 1, d);
       }
+
+      /** Get a Date pointing to UTC midnight for Y-M-D. */
       function dateUtcMidnight(y, m, d) {
+        // Date.UTC returns milliseconds since epoch, interpreted as UTC
         return new Date(Date.UTC(y, m - 1, d));
       }
+
+      /** Whole days between two Dates, based on UTC midnights. */
       function wholeDaysBetween(d1, d2) {
-        const MS = 86_400_000;
+        const MS_PER_DAY = 86_400_000;
         const u1 = Date.UTC(
           d1.getUTCFullYear(),
           d1.getUTCMonth(),
@@ -208,40 +278,69 @@
           d2.getUTCMonth(),
           d2.getUTCDate()
         );
-        return Math.floor((u2 - u1) / MS);
+        return Math.floor((u2 - u1) / MS_PER_DAY);
       }
+
+      /**
+       * Add N years to a birth date respecting Feb-29 birthdays:
+       * - If the resulting year isn't leap and birthday is Feb-29,
+       *   we map it to Feb-28 (common civil rule).
+       */
       function addYearsBirthAware(birthDate, n) {
-        const y = birthDate.getFullYear() + n,
-          m = birthDate.getMonth() + 1,
-          d = birthDate.getDate();
+        const y = birthDate.getFullYear() + n;
+        const m = birthDate.getMonth() + 1;
+        const d = birthDate.getDate();
         if (m === 2 && d === 29 && !isLeapYear(y))
           return dateLocalYMD(y, 2, 28);
         return dateLocalYMD(y, m, d);
       }
+
+      /** Completed whole years as of `asOf`, by comparing birthdays. */
       function wholeYearsElapsed(birthDate, asOf) {
         let years = asOf.getFullYear() - birthDate.getFullYear();
         const thisAnniv = addYearsBirthAware(birthDate, years);
-        if (asOf < thisAnniv) years--;
+        if (asOf < thisAnniv) years--; // haven't reached this year's birthday yet
         return years;
       }
+
+      /** Return last and next birthday “window” around `asOf`. */
       function birthdayWindow(birthDate, asOf) {
         const yearsCompleted = wholeYearsElapsed(birthDate, asOf);
         const lastBirthday = addYearsBirthAware(birthDate, yearsCompleted);
         const nextBirthday = addYearsBirthAware(birthDate, yearsCompleted + 1);
         return { yearsCompleted, lastBirthday, nextBirthday };
       }
+
+      /**
+       * Fractional years:
+       *   yearsCompleted + (time since last birthday)/(time between birthdays).
+       * This automatically handles leap years—sometimes the denominator
+       * is 366 days, sometimes 365.
+       */
       function fractionalYears(birthDate, asOf) {
         const { yearsCompleted, lastBirthday, nextBirthday } = birthdayWindow(
           birthDate,
           asOf
         );
-        const num = asOf - lastBirthday,
-          den = nextBirthday - lastBirthday;
+        const num = asOf - lastBirthday;
+        const den = nextBirthday - lastBirthday;
         return yearsCompleted + (den > 0 ? num / den : 0);
       }
+
+      /**
+       * Human-friendly Y • M • D breakdown:
+       * 1) Count whole years by birthdays.
+       * 2) From the last birthday, step forward **one calendar month at a time**
+       *    until stepping once more would exceed `asOf`.
+       * 3) Remaining whole days are computed via UTC-midnight difference.
+       *
+       * This uses *calendar months* (28–31 days), not an “average month”.
+       */
       function yearsMonthsDays(birthDate, asOf) {
         let y = wholeYearsElapsed(birthDate, asOf);
         let anchor = addYearsBirthAware(birthDate, y);
+
+        // Count real calendar months after last birthday
         let m = 0;
         while (true) {
           const next = new Date(
@@ -249,10 +348,12 @@
             anchor.getMonth() + 1,
             anchor.getDate()
           );
-          if (next > asOf) break;
+          if (next > asOf) break; // adding one more month would overshoot
           anchor = next;
           m++;
         }
+
+        // Whole remaining days (UTC midnight to avoid DST off-by-ones)
         const d = wholeDaysBetween(
           dateUtcMidnight(
             anchor.getFullYear(),
@@ -265,36 +366,60 @@
             asOf.getDate()
           )
         );
+
         return { y, m, d };
       }
+
+      /** Simple YYYY-MM-DD HH:MM:SS formatter in local time. */
       function formatLocal(dt) {
         const pad = (n) => String(n).padStart(2, "0");
-        return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(
-          dt.getDate()
-        )} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(
-          dt.getSeconds()
-        )}`;
+        return (
+          `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(
+            dt.getDate()
+          )} ` +
+          `${pad(dt.getHours())}:${pad(dt.getMinutes())}:${pad(
+            dt.getSeconds()
+          )}`
+        );
       }
 
+      /* ================================================================
+         VUE 3 APP (Options API)
+         - data(): reactive state the template reads from
+         - computed: derived values auto-update when dependencies change
+         - lifecycle: we tick "now" every second to live-update the view
+         ================================================================= */
       const App = {
         data() {
-          return { dob: new Date(DEFAULT_DOB), now: new Date(), timer: null };
+          return {
+            dob: new Date(DEFAULT_DOB), // fixed local baseline
+            now: new Date(), // current time (ticks every second)
+            timer: null, // holds setInterval handle
+          };
         },
+
         mounted() {
+          // Update "now" every 1000 ms (1 second)
           this.timer = setInterval(() => {
             this.now = new Date();
           }, 1000);
         },
+
         beforeUnmount() {
+          // Clean up our timer if the component is ever destroyed
           if (this.timer) clearInterval(this.timer);
         },
+
         computed: {
+          // Left panel readouts
           formattedDob() {
             return formatLocal(this.dob);
           },
           formattedNow() {
             return formatLocal(this.now);
           },
+
+          // Days since birth: computed using UTC midnights
           daysSinceBirth() {
             const bUTC = dateUtcMidnight(
               this.dob.getFullYear(),
@@ -308,19 +433,25 @@
             );
             return wholeDaysBetween(bUTC, nUTC);
           },
+
+          // Age as fractional years (leap-aware)
           ageYearsFractional() {
             return fractionalYears(this.dob, this.now);
           },
+
+          // Human-friendly Y • M • D using calendar months
           ymdBreakdown() {
             return yearsMonthsDays(this.dob, this.now);
           },
         },
       };
 
+      /* Mount with a CDN fallback (jsDelivr → unpkg), so Vue always loads. */
       (function mountVue() {
         const boot = () => Vue.createApp(App).mount("#app");
-        if (window.Vue) boot();
-        else {
+        if (window.Vue) {
+          boot();
+        } else {
           const s = document.createElement("script");
           s.src = "https://unpkg.com/vue@3.4.38/dist/vue.global.prod.js";
           s.onload = boot;
